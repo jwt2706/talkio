@@ -1,4 +1,5 @@
-import React from 'react';
+import 'react'
+import LiveWaveform from "./LiveWaveform";
 import TalkButton from './components/TalkButton';
 
 function App() {
@@ -10,6 +11,7 @@ function App() {
       </div>
       
       <div className="w-full flex justify-center pb-12">
+        <LiveWaveform />
         <TalkButton />
       </div>
     </div>
