@@ -23,18 +23,15 @@ jobs:
       - name: Build web app
         run: npm run build
 
-      - name: Web to APK Action
-        uses: cemcoe/web-to-apk-action@v14
+      - name: Website to APK Action
+        uses: darkshredder/web-to-app-action@Latest
         with:
-          web-dir: ./dist
-          package: com.example.talkio
-          name: Talkio
-          version: 1.0.0
+          build-folder-path: dist
+          app-name: Talkio
+          output-folder-path: apk-build
 
-      - name: Upload APK to Release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v3
         with:
-          files: apk/*.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: Talkio-android
+          path: apk-build/
