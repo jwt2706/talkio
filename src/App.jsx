@@ -27,11 +27,12 @@ function App() {
       setConnectionStatus('connecting');
       setError(null);
       try {
-        // Try login (hardcoded for now, you can make this dynamic)
-        await api.login('skytrac', 'skytrac');
+        // Ping the device instead of login
+        await api.ping();
         setConnectionStatus('connected');
         // Fetch device status
-        const status = await api.getDeviceStatus();
+        await api.login("skytrac", "skytrac");
+        const status = await api.getDiagnosticsStatus();
         setDeviceStatus(status);
       } catch (e) {
         setConnectionStatus('error');
