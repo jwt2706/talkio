@@ -23,15 +23,28 @@ jobs:
       - name: Build web app
         run: npm run build
 
-      - name: Website to APK Action
-        uses: darkshredder/web-to-app-action@Latest
-        with:
-          build-folder-path: dist
-          app-name: Talkio
-          output-folder-path: apk-build
+      - name: Install global Capacitor & Ionic
+        run: npm install -g @ionic/cli @capacitor/cli
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Initialize Capacitor
+        run: npx cap init Talkio com.example.talkio --web-dir=dist --npm-client=npm --no-interactive
+
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Copy web assets
+        run: npx cap copy android
+
+      - name: Build Android APK
+        run: |
+          cd android
+          ./gradlew assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Talkio-android
-          path: apk-build/
+          path: android/app/build/outputs/apk/debug/*.apk
