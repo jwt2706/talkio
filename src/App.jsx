@@ -44,6 +44,26 @@ function App() {
     connectAndFetch();
   }, []);
 
+  React.useEffect(() => {
+    async function connectAndFetch() {
+      setConnectionStatus('connecting');
+      setError(null);
+      try {
+        // Ping the device instead of login
+        await api.ping();
+        setConnectionStatus('connected');
+        // Fetch device status
+        await api.login("skytrac", "skytrac");
+        const status = await api.getDiagnosticsStatus();
+        setDeviceStatus(status);
+      } catch (e) {
+        setConnectionStatus('error');
+        setError(e.message || 'Connection failed');
+      }
+    }
+    connectAndFetch();
+  }, []);
+
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-blue-100 to-purple-200 flex flex-col justify-end items-center">
 
