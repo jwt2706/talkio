@@ -19,6 +19,12 @@ function getHeaders(auth = false, extra = {}) {
   return headers;
 }
 
+async function ping() {
+  const res = await fetch(`${API_BASE}/ping`);
+  if (!res.ok) throw new Error('Ping failed');
+  return res.json();
+}
+
 async function login(username, password) {
   const res = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
@@ -430,6 +436,7 @@ async function deleteUser(username) {
 }
 
 export default {
+  ping,
   login,
   setJwt,
   getJwt,
