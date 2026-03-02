@@ -75,9 +75,15 @@ function App() {
 
         {/* Connection status */}
         <div className="mt-4">
-          {connectionStatus === 'connecting' && <span className="text-blue-600">Connecting to device...</span>}
-          {connectionStatus === 'connected' && <span className="text-green-600">Connected!</span>}
-          {connectionStatus === 'error' && <span className="text-red-600">Connection failed: {error}</span>}
+          {connectionStatus === 'connecting' && (
+            <span className="text-blue-600">Status: Connecting...</span>
+          )}
+          {connectionStatus === 'connected' && (
+            <span className="text-green-600">Status: Connected</span>
+          )}
+          {connectionStatus === 'error' && (
+            <span className="text-red-600">Status: Disconnected</span>
+          )}
         </div>
 
         <p className="text-sm text-black/60">
