@@ -4,6 +4,7 @@ import LiveWaveform from "./components/LiveWaveform";
 import TalkButton from './components/TalkButton';
 import ExtendWindow from './components/ExtendWindow';
 import useFloorControl from './hooks/useFloorControl';
+import useAudioStreaming from './hooks/useAudioStreaming';
 
 const CHANNELS = [
   { id: "1", name: "Chanel 1"},
@@ -22,8 +23,18 @@ function App() {
   const [error, setError] = React.useState(null);
 
   const activeChannel = CHANNELS.find(c => c.id === activeChannelId);
-  const { status, requestMic, releaseMic } = useFloorControl(activeChannelId);
-
+  const { status, requestMic, releaseMic, client } = useFloorControl(activeChannelId);
+  const { startRecording, stopRecording } = useAudioStreaming(client, activeChannelId, 'my_device_id');
+  // 3. Lắng nghe trạng thái để bật/tắt thu âm tự động
+  React.useEffect(() => {
+    if (status === 'TALKING') {
+      startRecording();
+    } else {
+      // Nếu trạng thái là IDLE, LOCKED, hoặc REQUESTING thì đều dừng ghi âm
+      stopRecording();
+    }
+  }, [status]); // useEffect sẽ tự trigger lại mỗi khi biến 'status' đổi màu
+/*
   React.useEffect(() => {
     async function connectAndFetch() {
       setConnectionStatus('connecting');
@@ -43,6 +54,38 @@ function App() {
     }
     connectAndFetch();
   }, []);
+*/
+  // LOGIC NHẬN VÀ PHÁT AUDIO TỪ BẠN BÈ
+  React.useEffect(() => {
+    if (!client) return;
+
+    const audioTopic = `skytrac/audio/${activeChannelId}`;
+    
+    // Đăng ký nghe kênh âm thanh
+    client.subscribe(audioTopic);
+
+    // Bắt sự kiện có tin nhắn tới
+    const handleMessage = (topic, message) => {
+      if (topic === audioTopic) {
+        // Biến message của MQTT lúc này đang là mảng byte (Buffer)
+        // Bọc nó lại thành định dạng WebM Opus
+        const audioBlob = new Blob([message], { type: 'audio/webm;codecs=opus' });
+        
+        // Tạo URL ảo và phát luôn
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        
+        audio.play().catch(e => console.error("Lỗi phát âm thanh:", e));
+      }
+    };
+
+    client.on('message', handleMessage);
+    // Cleanup khi đổi kênh
+    return () => {
+      client.unsubscribe(audioTopic);
+      client.removeListener('message', handleMessage);
+    };
+  }, [client, activeChannelId]);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-blue-100 to-purple-200 flex flex-col justify-end items-center">

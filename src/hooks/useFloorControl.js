@@ -78,5 +78,7 @@ export default function useFloorControl(activeChannelId) {
     clientRef.current.publish(`skytrac/talkgroup/${activeChannelId}`, payload);
   };
 
-  return { status, requestMic, releaseMic };
+  return { status, requestMic, releaseMic,
+    client: clientRef.current // Trả về client để có thể dùng cho việc gửi audio sau này
+   };
 }
