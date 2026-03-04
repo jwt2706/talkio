@@ -37,52 +37,84 @@ function App() {
     }
   }, [status]); 
 
-  // LOGIC NHẬN VÀ PHÁT AUDIO (ĐÃ SỬA LỖI MOBILE VÀ MEMORY LEAK)
+  // LOGIC NHẬN VÀ PHÁT AUDIO (PHIÊN BẢN CHỐNG ĐẠN - NHẬN DIỆN HEADER)
   React.useEffect(() => {
-    // Phải đảm bảo thẻ audio trên giao diện đã load xong
     if (!client || !audioPlayerRef.current) return;
 
     const audioTopic = `skytrac/audio/${activeChannelId}`;
     client.subscribe(audioTopic);
 
-    const mediaSource = new MediaSource();
-    const audioEl = audioPlayerRef.current; // Sử dụng thẻ thực tế thay vì new Audio()
+    const audioEl = audioPlayerRef.current;
     
-    // Tạo URL và gắn vào thẻ
-    const objectUrl = URL.createObjectURL(mediaSource);
-    audioEl.src = objectUrl;
-
+    let mediaSource = null;
     let sourceBuffer = null;
     let chunkQueue = []; 
+    let isSourceOpen = false;
 
-    mediaSource.addEventListener('sourceopen', () => {
-      sourceBuffer = mediaSource.addSourceBuffer('audio/webm; codecs="opus"');
+    // Hàm đập đi xây lại hệ thống âm thanh
+    const resetAudioEnvironment = () => {
+      chunkQueue = [];
+      isSourceOpen = false;
+      sourceBuffer = null;
 
-      sourceBuffer.addEventListener('updateend', () => {
+      mediaSource = new MediaSource();
+      audioEl.src = URL.createObjectURL(mediaSource);
+
+      mediaSource.addEventListener('sourceopen', () => {
+        isSourceOpen = true;
+        sourceBuffer = mediaSource.addSourceBuffer('audio/webm; codecs="opus"');
+
+        sourceBuffer.addEventListener('updateend', () => {
+          if (chunkQueue.length > 0 && !sourceBuffer.updating) {
+            try {
+              sourceBuffer.appendBuffer(chunkQueue.shift());
+              if (audioEl.paused) audioEl.play().catch(()=>{});
+            } catch(e) { console.warn("Lỗi phát hàng đợi:", e); }
+          }
+        });
+
+        // Nếu có chunk đến sớm đang xếp hàng, đẩy vào luôn
         if (chunkQueue.length > 0 && !sourceBuffer.updating) {
-          sourceBuffer.appendBuffer(chunkQueue.shift());
-          if (audioEl.paused) audioEl.play().catch(e => console.warn("Trình duyệt chặn phát:", e));
+          try { sourceBuffer.appendBuffer(chunkQueue.shift()); } catch(e){}
         }
       });
-    });
+    };
+
+    // Khởi tạo phễu lần đầu tiên
+    resetAudioEnvironment();
 
     const handleMessage = (topic, message) => {
       if (topic === audioTopic) {
         const rawData = new Uint8Array(message);
         const senderId = rawData[0];
         
-        if (senderId === myAudioId) return; 
+        if (senderId === myAudioId) return; // Bỏ qua giọng mình tự vang lại
 
         const chunk = rawData.slice(1);
 
-        if (sourceBuffer && !sourceBuffer.updating) {
+        // NHẬN DIỆN "MAGIC BYTES" CỦA HEADER WEBM (0x1A 45 DF A3)
+        const isHeader = chunk.length >= 4 && 
+                         chunk[0] === 0x1A && 
+                         chunk[1] === 0x45 && 
+                         // Dùng Hexadecimal để dễ so sánh
+                         chunk[2] === 0xDF && 
+                         chunk[3] === 0xA3;
+
+        if (isHeader) {
+          console.log("🔥 Phát hiện Header mới! Đang thiết lập kênh truyền...");
+          resetAudioEnvironment();
+        }
+
+        // Đổ dữ liệu vào phễu
+        if (isSourceOpen && sourceBuffer && !sourceBuffer.updating) {
           try {
             sourceBuffer.appendBuffer(chunk);
-            if (audioEl.paused) audioEl.play().catch(e => console.warn("Chờ tương tác chạm:", e));
+            if (audioEl.paused) audioEl.play().catch(()=>{});
           } catch(e) {
-            console.error("Lỗi ghép chunk:", e);
+            console.warn("Lỗi ghép chunk, tạm thời bỏ qua đoạn vỡ tiếng này...");
           }
         } else {
+          // Phễu chưa mở xong thì cho xếp hàng
           chunkQueue.push(chunk);
         }
       }
@@ -93,10 +125,6 @@ function App() {
     return () => {
       client.unsubscribe(audioTopic);
       client.removeListener('message', handleMessage);
-      
-      // 2. Dọn dẹp rác bộ nhớ khi đổi kênh
-      URL.revokeObjectURL(objectUrl);
-      audioEl.src = '';
     };
   }, [client, activeChannelId]);
   

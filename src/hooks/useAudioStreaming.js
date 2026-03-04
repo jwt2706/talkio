@@ -41,6 +41,7 @@ export default function useAudioStreaming(mqttClient, activeChannelId, myAudioId
       // 4. Băm nhỏ âm thanh: Cứ 500ms xuất ra 1 chunk để gửi đi (giúp giảm độ trễ)
       recorder.start(500); 
       console.log('🎤 Bắt đầu thu âm...');
+      console.log('🎤 Bắt đầu thu âm với định dạng THỰC TẾ:', recorder.mimeType);
 
     } catch (err) {
       console.error('Lỗi truy cập Microphone:', err);
