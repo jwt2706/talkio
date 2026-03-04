@@ -1,7 +1,64 @@
 // src/utils/api.js
 // API utility for Skylink device
 
-const API_BASE = 'http://192.168.111.1:3000'; // Change if device IP changes
+
+// Support switching between Skylink and system API
+let API_BASE = 'http://192.168.111.1:3000'; // Default: Skylink
+export function setApiBase(url) {
+  API_BASE = url;
+}
+// --- System User/Room API ---
+// Set API_BASE to your backend, e.g. http://localhost:4000/api
+
+export async function register(email, password) {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ email, password })
+  });
+  if (!res.ok) throw new Error('Registration failed');
+  return res.json();
+}
+
+export async function userLogin(email, password) {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ email, password })
+  });
+  if (!res.ok) throw new Error('Login failed');
+  const data = await res.json();
+  setJwt(data.token);
+  return data;
+}
+
+export async function getRooms() {
+  const res = await fetch(`${API_BASE}/rooms`, {
+    headers: getHeaders(true)
+  });
+  if (!res.ok) throw new Error('Failed to fetch rooms');
+  return res.json();
+}
+
+export async function createRoom(name, isPublic = true) {
+  const res = await fetch(`${API_BASE}/rooms`, {
+    method: 'POST',
+    headers: getHeaders(true),
+    body: JSON.stringify({ name, isPublic })
+  });
+  if (!res.ok) throw new Error('Failed to create room');
+  return res.json();
+}
+
+export async function addUserToRoom(roomUuid, userUuid) {
+  const res = await fetch(`${API_BASE}/rooms/${roomUuid}/add`, {
+    method: 'POST',
+    headers: getHeaders(true),
+    body: JSON.stringify({ userUuid })
+  });
+  if (!res.ok) throw new Error('Failed to add user to room');
+  return res.json();
+}
 
 let jwt = null;
 
