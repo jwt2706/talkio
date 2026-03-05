@@ -4,6 +4,7 @@ import LiveWaveform from "./components/LiveWaveform";
 import TalkButton from "./components/TalkButton";
 import ExtendWindow from "./components/ExtendWindow";
 import useFloorControl from "./hooks/useFloorControl";
+import LoginPage from "./components/LoginPage";
 import useAudioStreaming from "./hooks/useAudioStreaming";
 
 // Admin portal overlay (inside the app, no router)
@@ -26,6 +27,19 @@ function App() {
   // Admin portal open/close
   const [adminOpen, setAdminOpen] = React.useState(false);
 
+  const [activeChannelId, setActiveChannelId] = React.useState(
+    INITIAL_CHANNELS[0].id
+  );
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const [currentUser, setCurrentUser] = React.useState(null);
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    setIsLoggedIn(true);
+  };
+  
+  const [connectionStatus, setConnectionStatus] = React.useState("connecting"); // connecting | connected | error
+  const [deviceStatus, setDeviceStatus] = React.useState(null);
+  const [error, setError] = React.useState(null);
   // Users are created by email (portal manages these)
   const [users, setUsers] = React.useState([
     { id: "u1", email: "user@uottawa.ca" },
@@ -223,7 +237,7 @@ function App() {
         <LiveWaveform running={status === "TALKING"} />
         <TalkButton status={status} onPress={requestMic} onRelease={releaseMic} />
       </div>
-
+<LoginPage open={!isLoggedIn} onLogin={handleLogin} />
       <ExtendWindow
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -233,9 +247,10 @@ function App() {
           setActiveChannelId(id);
           setDrawerOpen(false);
         }}
-        // ✅ Settings icon opens the portal (no dropdowns in drawer)
-        onOpenAdmin={() => {
-          setAdminOpen(true);
+        onCreateChannel={(newChannel) => {
+          // add channel + switch to it
+          setChannels((prev) => [...prev, newChannel]);
+          setActiveChannelId(newChannel.id);
           setDrawerOpen(false);
         }}
       />
@@ -251,6 +266,7 @@ function App() {
         setMemberships={setMemberships}
       />
     </div>
+    
   );
 }
 
