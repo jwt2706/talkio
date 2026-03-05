@@ -11,7 +11,7 @@ export default function useFloorControl(activeChannelId) {
 
   useEffect(() => {
     // 1. Khởi tạo kết nối WebSocket tới server DigitalOcean
-    const client = mqtt.connect('wss://159.203.3.86:9001');
+    const client = mqtt.connect('ws://159.203.3.86:9001');
     clientRef.current = client;
 
     const topic = `skytrac/talkgroup/${activeChannelId}`;
@@ -55,17 +55,11 @@ export default function useFloorControl(activeChannelId) {
   // 4. Các hàm thao tác với Mic
   const requestMic = () => {
     if (status === 'LOCKED') return;
-    
-    setStatus('REQUESTING');
-    
-    // Gửi tín hiệu thông báo cho toàn group là mình lấy mic
-    const payload = JSON.stringify({ clientId: myClientId, action: 'mic_taken' });
-    clientRef.current.publish(`skytrac/talkgroup/${activeChannelId}`, payload);
-    
-    // Giả lập server phản hồi cấp quyền thành công sau 200ms
-    setTimeout(() => {
-      setStatus('TALKING');
-    }, 200);
+
+    setStatus('TALKING'); // nói ngay
+    clientRef.current.publish(`skytrac/talkgroup/${activeChannelId}`,
+      JSON.stringify({ clientId: myClientId, action: 'mic_taken', ts: Date.now() })
+    );
   };
 
   const releaseMic = () => {

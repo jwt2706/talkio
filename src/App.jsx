@@ -76,6 +76,20 @@ function App() {
 
   // LOGIC NHẬN VÀ PHÁT AUDIO (PHIÊN BẢN CHỐNG ĐẠN - NHẬN DIỆN HEADER)
   React.useEffect(() => {
+    const senderState = new Map(); // senderId -> { lastSeq, lastTs }
+
+    const readU16BE = (u8, off) => (u8[off] << 8) | u8[off + 1];
+    const readU32BE = (u8, off) =>
+      ((u8[off] << 24) >>> 0) | (u8[off + 1] << 16) | (u8[off + 2] << 8) | u8[off + 3];
+
+    // seq compare with wrap-around (uint16)
+    // returns true if seq is "newer" than lastSeq
+    const isSeqNewer = (seq, lastSeq) => {
+      // distance forward in modulo 65536
+      const diff = (seq - lastSeq + 65536) % 65536;
+      // newer if within next 1..32767
+      return diff > 0 && diff < 32768;
+    };
     if (!client || !audioPlayerRef.current) return;
 
     const audioTopic = `skytrac/audio/${activeChannelId}`;
@@ -131,7 +145,12 @@ function App() {
 
         if (senderId === myAudioId) return; // Bỏ qua giọng mình tự vang lại
 
-        const chunk = rawData.slice(1);
+        // đủ header?
+        if (rawData.length < 7) return;
+
+        const seq = readU16BE(rawData, 1);
+        const ts = readU32BE(rawData, 3);
+        const chunk = rawData.slice(7); // webm chunk
 
         // NHẬN DIỆN "MAGIC BYTES" CỦA HEADER WEBM (0x1A 45 DF A3)
         const isHeader =
@@ -144,8 +163,35 @@ function App() {
         if (isHeader) {
           console.log("🔥 Phát hiện Header mới! Đang thiết lập kênh truyền...");
           resetAudioEnvironment();
-        }
+          senderState.set(senderId, { lastSeq: seq, lastTs: ts });
+          // tiếp tục append header (đừng drop header)
+        } else {
+          // ---- Drop policy ----
+          const now = Date.now() >>> 0;
+          // độ trễ ước tính (ms). Vì ts uint32 nên dùng phép trừ unsigned:
+          const age = (now - ts) >>> 0;
 
+          // ngưỡng drop: tùy satellite. Gợi ý: 700–1200ms
+          const DROP_AGE_MS = 900;
+
+          // Nếu quá cũ => drop để khỏi "nghe lết"
+          if (age > DROP_AGE_MS) {
+            // console.log("🗑️ drop old packet", { senderId, seq, age });
+            return;
+          }
+          const st = senderState.get(senderId);
+          if (st) {
+            // out-of-order/duplicate => drop
+            if (!isSeqNewer(seq, st.lastSeq)) {
+              // console.log("🗑️ drop out-of-order", { senderId, seq, last: st.lastSeq });
+              return;
+            }
+            senderState.set(senderId, { lastSeq: seq, lastTs: ts });
+          } else {
+            senderState.set(senderId, { lastSeq: seq, lastTs: ts });
+          }
+        }
+        const MAX_QUEUE = 10;
         // Đổ dữ liệu vào phễu
         if (isSourceOpen && sourceBuffer && !sourceBuffer.updating) {
           try {
@@ -157,6 +203,10 @@ function App() {
         } else {
           // Phễu chưa mở xong thì cho xếp hàng
           chunkQueue.push(chunk);
+          if (chunkQueue.length > MAX_QUEUE) {
+            // drop oldest to keep real-time
+            chunkQueue.shift();
+          }
         }
       }
     };

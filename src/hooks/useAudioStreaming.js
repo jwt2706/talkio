@@ -1,9 +1,11 @@
 // hooks/useAudioStreaming.js
+// Hook này chịu trách nhiệm thu âm từ microphone, đóng gói thành các chunk nhị phân tối ưu và gửi thẳng lên MQTT topic dành cho âm thanh
 import { useRef } from 'react';
 
 // SỬA LỖI: Đổi myClientId thành myAudioId cho khớp với App.jsx
 export default function useAudioStreaming(mqttClient, activeChannelId, myAudioId) {
   const mediaRecorderRef = useRef(null);
+  const seqRef = useRef(0); // uint16 sequence number cho mỗi chunk âm thanh, giúp nhận diện và sắp xếp đúng thứ tự
 
   // Hàm bắt đầu thu âm
   const startRecording = async () => {
@@ -27,10 +29,34 @@ export default function useAudioStreaming(mqttClient, activeChannelId, myAudioId
           const arrayBuffer = await event.data.arrayBuffer();
           const audioBytes = new Uint8Array(arrayBuffer);
 
-          // 2. TẠO GÓI TIN TỐI ƯU BĂNG THÔNG: 1 Byte ID + Audio
-          const payload = new Uint8Array(1 + audioBytes.length);
-          payload[0] = myAudioId; // SỬA LỖI: Dùng đúng biến myAudioId
-          payload.set(audioBytes, 1); // Đổ data âm thanh vào từ byte thứ 2
+          /* 2. TẠO GÓI TIN TỐI ƯU BĂNG THÔNG: 
+          [ 1 byte senderId ]
+          [ 2 bytes seq (uint16, big-endian) ]
+          [ 4 bytes tsMs (uint32, milliseconds mod 2^32) ]
+          [ webm_chunk... ]
+          */
+          // ---- header fields ----
+          const seq = seqRef.current & 0xffff;
+          seqRef.current = (seqRef.current + 1) & 0xffff;
+
+          const ts = Date.now() >>> 0; // uint32 wrap
+
+          // payload = 1 + 2 + 4 + audio
+          const payload = new Uint8Array(7 + audioBytes.length);
+
+          payload[0] = myAudioId;
+
+          // seq uint16 big-endian
+          payload[1] = (seq >>> 8) & 0xff;
+          payload[2] = seq & 0xff;
+
+          // ts uint32 big-endian
+          payload[3] = (ts >>> 24) & 0xff;
+          payload[4] = (ts >>> 16) & 0xff;
+          payload[5] = (ts >>> 8) & 0xff;
+          payload[6] = ts & 0xff;
+
+          payload.set(audioBytes, 7);
           
           // 3. Publish thẳng lên một topic dành riêng cho âm thanh
           const audioTopic = `skytrac/audio/${activeChannelId}`;
@@ -40,8 +66,8 @@ export default function useAudioStreaming(mqttClient, activeChannelId, myAudioId
         }
       };
 
-      // 4. Băm nhỏ âm thanh: Cứ 500ms xuất ra 1 chunk để gửi đi (giúp giảm độ trễ)
-      recorder.start(500); 
+      // 4. Băm nhỏ âm thanh: Cứ 60ms xuất ra 1 chunk để gửi đi (giúp giảm độ trễ)
+      recorder.start(60); // Cố gắng tạo chunk mỗi 60ms để có thể gửi đi nhanh hơn, giảm độ trễ tổng thể 
       console.log('🎤 Bắt đầu thu âm...');
       console.log('🎤 Bắt đầu thu âm với định dạng THỰC TẾ:', recorder.mimeType);
 
