@@ -16,6 +16,7 @@ export default function useVoiceWebRTC(channelId, clientRef) {
             noiseSuppression: true
           }
         });
+        console.log("Mic tracks:", streamRef.current.getAudioTracks());
         console.log("Microphone ready");
       } catch (err) {
         console.error("Mic access error", err);
@@ -31,10 +32,14 @@ export default function useVoiceWebRTC(channelId, clientRef) {
     if (!clientRef.current) return;
 
     const peer = new Peer({
-      initiator: true,
+      initiator: false,
       trickle: false,
-      stream: streamRef.current
-    });
+      stream: streamRef.current,
+      config: {
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" }]
+        }
+      });
 
     peer.on("signal", data => {
 

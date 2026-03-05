@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'; // Thêm useRef
+import React, { useRef } from 'react'; // Add useRef
 import api from './utils/api';
 import LiveWaveform from "./components/LiveWaveform";
 import TalkButton from './components/TalkButton';
@@ -20,7 +20,7 @@ function App() {
   const [deviceStatus, setDeviceStatus] = React.useState(null);
   const [error, setError] = React.useState(null);
 
-  // 1. Tạo Ref để móc vào thẻ audio vật lý trên giao diện
+  // 1. Create a ref to hook into the physical audio element on the UI
   const audioPlayerRef = useRef(null);
 
   const activeChannel = CHANNELS.find(c => c.id === activeChannelId);
@@ -37,7 +37,7 @@ function App() {
     }
   }, [status]); 
 
-  // LOGIC NHẬN VÀ PHÁT AUDIO (PHIÊN BẢN CHỐNG ĐẠN - NHẬN DIỆN HEADER)
+  // AUDIO RECEIVE AND PLAYBACK LOGIC (BULLETPROOF VERSION - HEADER DETECTION)
   React.useEffect(() => {
     if (!client || !audioPlayerRef.current) return;
 
@@ -51,7 +51,7 @@ function App() {
     let chunkQueue = []; 
     let isSourceOpen = false;
 
-    // Hàm đập đi xây lại hệ thống âm thanh
+    // Function to tear down and rebuild the audio system
     const resetAudioEnvironment = () => {
       chunkQueue = [];
       isSourceOpen = false;
@@ -69,18 +69,18 @@ function App() {
             try {
               sourceBuffer.appendBuffer(chunkQueue.shift());
               if (audioEl.paused) audioEl.play().catch(()=>{});
-            } catch(e) { console.warn("Lỗi phát hàng đợi:", e); }
+            } catch(e) { console.warn("Queue playback error:", e); }
           }
         });
 
-        // Nếu có chunk đến sớm đang xếp hàng, đẩy vào luôn
+        // If an early chunk arrives while queued, push it immediately
         if (chunkQueue.length > 0 && !sourceBuffer.updating) {
           try { sourceBuffer.appendBuffer(chunkQueue.shift()); } catch(e){}
         }
       });
     };
 
-    // Khởi tạo phễu lần đầu tiên
+    // Initialize the funnel for the first time
     resetAudioEnvironment();
 
     const handleMessage = (topic, message) => {
@@ -88,33 +88,33 @@ function App() {
         const rawData = new Uint8Array(message);
         const senderId = rawData[0];
         
-        if (senderId === myAudioId) return; // Bỏ qua giọng mình tự vang lại
+        if (senderId === myAudioId) return; // Ignore my own voice echo
 
         const chunk = rawData.slice(1);
 
-        // NHẬN DIỆN "MAGIC BYTES" CỦA HEADER WEBM (0x1A 45 DF A3)
+        // DETECT "MAGIC BYTES" OF WEBM HEADER (0x1A 45 DF A3)
         const isHeader = chunk.length >= 4 && 
                          chunk[0] === 0x1A && 
                          chunk[1] === 0x45 && 
-                         // Dùng Hexadecimal để dễ so sánh
+                         // Use hexadecimal for easier comparison
                          chunk[2] === 0xDF && 
                          chunk[3] === 0xA3;
 
         if (isHeader) {
-          console.log("🔥 Phát hiện Header mới! Đang thiết lập kênh truyền...");
+          console.log("🔥 New header detected! Setting up stream...");
           resetAudioEnvironment();
         }
 
-        // Đổ dữ liệu vào phễu
+        // Feed data into the funnel
         if (isSourceOpen && sourceBuffer && !sourceBuffer.updating) {
           try {
             sourceBuffer.appendBuffer(chunk);
             if (audioEl.paused) audioEl.play().catch(()=>{});
           } catch(e) {
-            console.warn("Lỗi ghép chunk, tạm thời bỏ qua đoạn vỡ tiếng này...");
+            console.warn("Chunk append error, temporarily skipping this garbled segment...");
           }
         } else {
-          // Phễu chưa mở xong thì cho xếp hàng
+          // If the funnel isn't open yet, queue the chunk
           chunkQueue.push(chunk);
         }
       }
@@ -225,7 +225,7 @@ function App() {
         onSelectChannel={(id) => {
           setActiveChannelId(id);
           setDrawerOpen(false);
-          // Đã xóa setWaveformRunning(false) ở đây
+          // Removed setWaveformRunning(false) here
         }}
         onCreateChannel={(newChannel) => {
           // ✅ add channel + switch to it
