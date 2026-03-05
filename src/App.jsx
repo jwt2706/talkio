@@ -157,7 +157,9 @@ function App() {
   const audioPlayerRef = useRef(null);
   const activeChannel = CHANNELS.find((c) => c.id === activeChannelId);
   const myAudioId = React.useMemo(() => Math.floor(Math.random() * 256), []);
-  const { status, requestMic, releaseMic, client } = useFloorControl(activeChannelId);
+  // Only connect to MQTT if user is logged in (system mode)
+  const shouldConnect = mode === 'system' && !!user;
+  const { status, requestMic, releaseMic, client } = useFloorControl(activeChannelId, shouldConnect);
   const { startRecording, stopRecording } = useAudioStreaming(client, activeChannelId, myAudioId);
 
   React.useEffect(() => {

@@ -2,12 +2,24 @@
 import { useState, useEffect, useRef } from 'react';
 import mqtt from 'mqtt';
 
-export default function useFloorControl(activeChannelId) {
+
+export default function useFloorControl(activeChannelId, shouldConnect) {
   const [status, setStatus] = useState('IDLE'); // IDLE, REQUESTING, TALKING, LOCKED
   const clientRef = useRef(null);
   const myClientId = useRef(`device_${Math.random().toString(36).substring(2, 9)}`).current;
 
   useEffect(() => {
+    if (!shouldConnect) {
+      // If not logged in, clean up any existing connection
+      if (clientRef.current) {
+        try {
+          clientRef.current.end();
+        } catch {}
+        clientRef.current = null;
+      }
+      setStatus('IDLE');
+      return;
+    }
     const client = mqtt.connect('wss://159.203.3.86:9001');
     clientRef.current = client;
     const topic = `skytrac/talkgroup/${activeChannelId}`;
@@ -39,7 +51,7 @@ export default function useFloorControl(activeChannelId) {
       client.unsubscribe(topic);
       client.end();
     };
-  }, [activeChannelId]);
+  }, [activeChannelId, shouldConnect]);
 
   const requestMic = () => {
     if (status === 'LOCKED') return;
