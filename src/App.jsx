@@ -61,6 +61,7 @@ function App() {
   usePttAudioRx({
     mqttClient: client,
     channelId: activeChannelId,
+    mySsrc,
   });
 
   // ✅ TX: only send when TALKING
