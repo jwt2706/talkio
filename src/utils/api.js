@@ -1,14 +1,9 @@
-// src/utils/api.js
-// API utility for Skylink device
+// --- BACKEND APIS ---
 
-
-// Support switching between Skylink and system API
-let API_BASE = 'http://192.168.111.1:3000'; // Default: Skylink
+let API_BASE = 'http://localhost:4000/api';
 export function setApiBase(url) {
   API_BASE = url;
 }
-// --- System User/Room API ---
-// Set API_BASE to your backend, e.g. http://localhost:4000/api
 
 export async function register(email, password) {
   const res = await fetch(`${API_BASE}/auth/register`, {
@@ -60,6 +55,13 @@ export async function addUserToRoom(roomUuid, userUuid) {
   return res.json();
 }
 
+// --- SKYTRAC APIS ---
+
+let SKYTRAC_API_BASE = 'http://192.168.111.1:3000';
+export function setSkytracApiBase(url) {
+  SKYTRAC_API_BASE = url;
+}
+
 let jwt = null;
 
 function setJwt(token) {
@@ -77,13 +79,13 @@ function getHeaders(auth = false, extra = {}) {
 }
 
 async function ping() {
-  const res = await fetch(`${API_BASE}/ping`);
+  const res = await fetch(`${SKYTRAC_API_BASE}/ping`);
   if (!res.ok) throw new Error('Ping failed');
   return res.json();
 }
 
 async function login(username, password) {
-  const res = await fetch(`${API_BASE}/auth/login`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/auth/login`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ username, password })
@@ -96,7 +98,7 @@ async function login(username, password) {
 
 // Example: GET /diagnostics/status
 async function getDiagnosticsStatus() {
-  const res = await fetch(`${API_BASE}/diagnostics/status`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/diagnostics/status`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get diagnostics status');
@@ -105,7 +107,7 @@ async function getDiagnosticsStatus() {
 
 // Example: GET /device/info
 async function getDeviceInfo() {
-  const res = await fetch(`${API_BASE}/device/info`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/device/info`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get device info');
@@ -115,7 +117,7 @@ async function getDeviceInfo() {
 
 // --- Auth ---
 async function changePassword({ username, oldpassword, newpassword }) {
-  const res = await fetch(`${API_BASE}/auth/changepassword`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/auth/changepassword`, {
     method: 'POST',
     headers: getHeaders(true),
     body: JSON.stringify({ username, oldpassword, newpassword })
@@ -126,7 +128,7 @@ async function changePassword({ username, oldpassword, newpassword }) {
 
 // --- DHCP Reservations ---
 async function getDhcpReservations() {
-  const res = await fetch(`${API_BASE}/dhcp/reservations`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/dhcp/reservations`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get DHCP reservations');
@@ -134,7 +136,7 @@ async function getDhcpReservations() {
 }
 
 async function createDhcpReservation({ mac, ip, hostname }) {
-  const res = await fetch(`${API_BASE}/dhcp/reservations`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/dhcp/reservations`, {
     method: 'PUT',
     headers: getHeaders(true),
     body: JSON.stringify({ mac, ip, hostname })
@@ -144,7 +146,7 @@ async function createDhcpReservation({ mac, ip, hostname }) {
 }
 
 async function updateDhcpReservation(mac, data) {
-  const res = await fetch(`${API_BASE}/dhcp/reservations/${encodeURIComponent(mac)}`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/dhcp/reservations/${encodeURIComponent(mac)}`, {
     method: 'PATCH',
     headers: getHeaders(true),
     body: JSON.stringify(data)
@@ -154,7 +156,7 @@ async function updateDhcpReservation(mac, data) {
 }
 
 async function deleteDhcpReservation(mac) {
-  const res = await fetch(`${API_BASE}/dhcp/reservations/${encodeURIComponent(mac)}`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/dhcp/reservations/${encodeURIComponent(mac)}`, {
     method: 'DELETE',
     headers: getHeaders(true)
   });
@@ -164,7 +166,7 @@ async function deleteDhcpReservation(mac) {
 
 // --- Device Info ---
 async function getDeviceState() {
-  const res = await fetch(`${API_BASE}/device/state`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/device/state`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get device state');
@@ -172,7 +174,7 @@ async function getDeviceState() {
 }
 
 async function getDeviceStatus() {
-  const res = await fetch(`${API_BASE}/device/status`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/device/status`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get device status');
@@ -180,7 +182,7 @@ async function getDeviceStatus() {
 }
 
 async function getDeviceDataUsage(period = '24h') {
-  const res = await fetch(`${API_BASE}/device/data-usage?period=${encodeURIComponent(period)}`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/device/data-usage?period=${encodeURIComponent(period)}`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get device data usage');
@@ -188,7 +190,7 @@ async function getDeviceDataUsage(period = '24h') {
 }
 
 async function getDeviceName() {
-  const res = await fetch(`${API_BASE}/device/name`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/device/name`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get device name');
@@ -196,7 +198,7 @@ async function getDeviceName() {
 }
 
 async function setDeviceName(name) {
-  const res = await fetch(`${API_BASE}/device/name`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/device/name`, {
     method: 'PATCH',
     headers: getHeaders(true),
     body: JSON.stringify({ name })
@@ -207,7 +209,7 @@ async function setDeviceName(name) {
 
 // --- Network Status ---
 async function getWifiStatus() {
-  const res = await fetch(`${API_BASE}/network/status/wifi`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/network/status/wifi`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get WiFi status');
@@ -215,7 +217,7 @@ async function getWifiStatus() {
 }
 
 async function getCellStatus() {
-  const res = await fetch(`${API_BASE}/network/status/cell`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/network/status/cell`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get cell status');
@@ -223,7 +225,7 @@ async function getCellStatus() {
 }
 
 async function getCertusStatus() {
-  const res = await fetch(`${API_BASE}/network/status/certus`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/network/status/certus`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get certus status');
@@ -232,7 +234,7 @@ async function getCertusStatus() {
 
 // --- Network Settings ---
 async function getWifiSettings() {
-  const res = await fetch(`${API_BASE}/network/wifi`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/network/wifi`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get WiFi settings');
@@ -240,7 +242,7 @@ async function getWifiSettings() {
 }
 
 async function setWifiSettings(data) {
-  const res = await fetch(`${API_BASE}/network/wifi`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/network/wifi`, {
     method: 'PATCH',
     headers: getHeaders(true),
     body: JSON.stringify(data)
@@ -250,7 +252,7 @@ async function setWifiSettings(data) {
 }
 
 async function getLanSettings() {
-  const res = await fetch(`${API_BASE}/network/lan`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/network/lan`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get LAN settings');
@@ -258,7 +260,7 @@ async function getLanSettings() {
 }
 
 async function setLanSettings(data) {
-  const res = await fetch(`${API_BASE}/network/lan`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/network/lan`, {
     method: 'PATCH',
     headers: getHeaders(true),
     body: JSON.stringify(data)
@@ -268,7 +270,7 @@ async function setLanSettings(data) {
 }
 
 async function getRoutingPreferences() {
-  const res = await fetch(`${API_BASE}/network/routing`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/network/routing`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get routing preferences');
@@ -276,7 +278,7 @@ async function getRoutingPreferences() {
 }
 
 async function setRoutingPreferences(prefer) {
-  const res = await fetch(`${API_BASE}/network/routing`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/network/routing`, {
     method: 'PUT',
     headers: getHeaders(true),
     body: JSON.stringify({ prefer })
@@ -286,7 +288,7 @@ async function setRoutingPreferences(prefer) {
 }
 
 async function getFirewallConfig() {
-  const res = await fetch(`${API_BASE}/network/firewall`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/network/firewall`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get firewall config');
@@ -294,7 +296,7 @@ async function getFirewallConfig() {
 }
 
 async function setFirewallConfig(profile) {
-  const res = await fetch(`${API_BASE}/network/firewall`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/network/firewall`, {
     method: 'PUT',
     headers: getHeaders(true),
     body: JSON.stringify({ profile })
@@ -305,7 +307,7 @@ async function setFirewallConfig(profile) {
 
 // --- Cellular APN ---
 async function getCellApn() {
-  const res = await fetch(`${API_BASE}/cell/apn`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/cell/apn`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get cell APN');
@@ -313,7 +315,7 @@ async function getCellApn() {
 }
 
 async function setCellApn(apn) {
-  const res = await fetch(`${API_BASE}/cell/apn`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/cell/apn`, {
     method: 'PUT',
     headers: getHeaders(true),
     body: JSON.stringify({ apn })
@@ -324,7 +326,7 @@ async function setCellApn(apn) {
 
 // --- Diagnostics ---
 async function diagnosticsPing({ ip, count, interfaceType }) {
-  const res = await fetch(`${API_BASE}/diagnostics/ping`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/diagnostics/ping`, {
     method: 'POST',
     headers: getHeaders(true),
     body: JSON.stringify({ ip, count, interface: interfaceType })
@@ -335,7 +337,7 @@ async function diagnosticsPing({ ip, count, interfaceType }) {
 
 // --- Network Toggle ---
 async function networkToggle({ type, enabled }) {
-  const res = await fetch(`${API_BASE}/network/toggle`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/network/toggle`, {
     method: 'POST',
     headers: getHeaders(true),
     body: JSON.stringify({ type, enabled })
@@ -346,7 +348,7 @@ async function networkToggle({ type, enabled }) {
 
 // --- Logs ---
 async function getLogTypes() {
-  const res = await fetch(`${API_BASE}/logs`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/logs`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get log types');
@@ -354,7 +356,7 @@ async function getLogTypes() {
 }
 
 async function getLog(logType, start, end) {
-  let url = `${API_BASE}/logs/${encodeURIComponent(logType)}`;
+  let url = `${SKYTRAC_API_BASE}/logs/${encodeURIComponent(logType)}`;
   const params = [];
   if (start) params.push(`start=${encodeURIComponent(start)}`);
   if (end) params.push(`end=${encodeURIComponent(end)}`);
@@ -368,7 +370,7 @@ async function getLog(logType, start, end) {
 
 // --- GPS ---
 async function getGps() {
-  const res = await fetch(`${API_BASE}/location/gps`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/location/gps`, {
     headers: getHeaders(true)
   });
   if (!res.ok) throw new Error('Failed to get GPS');
@@ -376,7 +378,7 @@ async function getGps() {
 }
 
 async function toggleGps(enabled) {
-  const res = await fetch(`${API_BASE}/location/gps/toggle`, {
+  const res = await fetch(`${SKYTRAC_API_BASE}/location/gps/toggle`, {
     method: 'POST',
     headers: getHeaders(true),
     body: JSON.stringify({ enabled })
@@ -385,114 +387,8 @@ async function toggleGps(enabled) {
   return res.json();
 }
 
-async function getGpsInterval() {
-  const res = await fetch(`${API_BASE}/location/gps/interval`, {
-    headers: getHeaders(true)
-  });
-  if (!res.ok) throw new Error('Failed to get GPS interval');
-  return res.json();
-}
-
-async function setGpsInterval(interval) {
-  const res = await fetch(`${API_BASE}/location/gps/interval`, {
-    method: 'POST',
-    headers: getHeaders(true),
-    body: JSON.stringify({ interval })
-  });
-  if (!res.ok) throw new Error('Failed to set GPS interval');
-  return res.json();
-}
-
-// --- Config ---
-async function getConfig() {
-  const res = await fetch(`${API_BASE}/config`, {
-    headers: getHeaders(true)
-  });
-  if (!res.ok) throw new Error('Failed to get config');
-  return res;
-}
-
-async function setConfig(file) {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await fetch(`${API_BASE}/config`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${jwt}` },
-    body: formData
-  });
-  if (!res.ok) throw new Error('Failed to set config');
-  return res.json();
-}
-
-async function resetConfig() {
-  const res = await fetch(`${API_BASE}/config`, {
-    method: 'DELETE',
-    headers: getHeaders(true)
-  });
-  if (!res.ok) throw new Error('Failed to reset config');
-  return res.json();
-}
-
-// --- System Update ---
-async function systemUpdate(bundle) {
-  const formData = new FormData();
-  formData.append('bundle', bundle);
-  const res = await fetch(`${API_BASE}/system/update`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${jwt}` },
-    body: formData
-  });
-  if (!res.ok) throw new Error('Failed to update system');
-  return res.json();
-}
-
-// --- Users ---
-async function getUsers() {
-  const res = await fetch(`${API_BASE}/users`, {
-    headers: getHeaders(true)
-  });
-  if (!res.ok) throw new Error('Failed to get users');
-  return res.json();
-}
-
-async function createUser({ username, password, role, permissions }) {
-  const res = await fetch(`${API_BASE}/users`, {
-    method: 'PUT',
-    headers: getHeaders(true),
-    body: JSON.stringify({ username, password, role, permissions })
-  });
-  if (!res.ok) throw new Error('Failed to create user');
-  return res.json();
-}
-
-async function getUser(username) {
-  const res = await fetch(`${API_BASE}/users/${encodeURIComponent(username)}`, {
-    headers: getHeaders(true)
-  });
-  if (!res.ok) throw new Error('Failed to get user');
-  return res.json();
-}
-
-async function updateUser(username, data) {
-  const res = await fetch(`${API_BASE}/users/${encodeURIComponent(username)}`, {
-    method: 'PATCH',
-    headers: getHeaders(true),
-    body: JSON.stringify(data)
-  });
-  if (!res.ok) throw new Error('Failed to update user');
-  return res.json();
-}
-
-async function deleteUser(username) {
-  const res = await fetch(`${API_BASE}/users/${encodeURIComponent(username)}`, {
-    method: 'DELETE',
-    headers: getHeaders(true)
-  });
-  if (!res.ok) throw new Error('Failed to delete user');
-  return res.json();
-}
-
 export default {
+  setApiBase,
   ping,
   login,
   setJwt,
@@ -527,16 +423,5 @@ export default {
   getLogTypes,
   getLog,
   getGps,
-  toggleGps,
-  getGpsInterval,
-  setGpsInterval,
-  getConfig,
-  setConfig,
-  resetConfig,
-  systemUpdate,
-  getUsers,
-  createUser,
-  getUser,
-  updateUser,
-  deleteUser,
+  toggleGps
 };
