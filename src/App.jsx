@@ -1,4 +1,27 @@
 import React, { useRef } from "react";
+// Utility to check/request mic permission
+async function ensureMicPermission() {
+  if (!navigator?.permissions || !navigator?.mediaDevices) return;
+  try {
+    const status = await navigator.permissions.query({ name: 'microphone' });
+    if (status.state === 'granted') return; // Already granted
+    if (status.state === 'prompt') {
+      // Will prompt user
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    }
+    // If denied, optionally alert
+    if (status.state === 'denied') {
+      alert('Microphone permission is required to use talk features. Please enable it in your browser or app settings.');
+    }
+  } catch (err) {
+    // Fallback: try to prompt
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      alert('Microphone permission is required to use talk features.');
+    }
+  }
+}
 import api from "./utils/api";
 import LiveWaveform from "./components/LiveWaveform";
 import TalkButton from "./components/TalkButton";
@@ -18,6 +41,10 @@ const CHANNELS = [
 ];
 
 function App() {
+    // Ask for mic permission on first app load
+    React.useEffect(() => {
+      ensureMicPermission();
+    }, []);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [activeChannelId, setActiveChannelId] = React.useState(CHANNELS[0].id);
 
@@ -50,7 +77,6 @@ function App() {
   React.useEffect(() => {
     let cancelled = false;
     if (mode === 'skylink') {
-      api.setApiBase('http://192.168.111.1:3000');
       setConnectionStatus('connecting');
       setError(null);
       setUser(null);
@@ -67,7 +93,6 @@ function App() {
         }
       })();
     } else {
-      api.setApiBase('http://localhost:4000/api'); // Change to your backend
       setConnectionStatus('system');
       setError(null);
       setDeviceStatus(null);
