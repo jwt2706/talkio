@@ -6,7 +6,7 @@ import ExtendWindow from "./components/ExtendWindow";
 import useFloorControl from "./hooks/useFloorControl";
 import LoginPage from "./components/LoginPage";
 import useAudioStreaming from "./hooks/useAudioStreaming";
-
+import useWebRTCAudio from "./hooks/WebRTCAudio";
 // Admin portal overlay (inside the app, no router)
 import AdminPortal from "./components/Adminportal";
 
@@ -33,6 +33,7 @@ function App() {
     setCurrentUser(user);
     setIsLoggedIn(true);
   };
+  
   // Users are created by email (portal manages these)
   const [users, setUsers] = React.useState([
     { id: "u1", email: "user@uottawa.ca" },
@@ -73,7 +74,12 @@ function App() {
       stopRecording();
     }
   }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+// WebRTC additions
+  const { setTalking } = useWebRTCAudio(client, activeChannelId, myAudioId, audioPlayerRef);
 
+  React.useEffect(() => {
+  setTalking(status === "TALKING");
+}, [status]);
   // LOGIC NHẬN VÀ PHÁT AUDIO (PHIÊN BẢN CHỐNG ĐẠN - NHẬN DIỆN HEADER)
   React.useEffect(() => {
     if (!client || !audioPlayerRef.current) return;
@@ -253,6 +259,7 @@ function App() {
         channels={CHANNELS}
         activeChannelId={activeChannelId}
         onSelectChannel={(id) => {
+          console.log("Joining channel:", id);
           setActiveChannelId(id);
           setDrawerOpen(false);
         }}

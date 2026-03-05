@@ -54,12 +54,15 @@ export default function useFloorControl(activeChannelId) {
 
   // 4. Các hàm thao tác với Mic
   const requestMic = () => {
+    console.log("🎤 Requesting mic for channel:", activeChannelId);
     if (status === 'LOCKED') return;
     
     setStatus('REQUESTING');
     
     // Gửi tín hiệu thông báo cho toàn group là mình lấy mic
     const payload = JSON.stringify({ clientId: myClientId, action: 'mic_taken' });
+
+    console.log("📤 Sending mic_taken message:", payload);
     clientRef.current.publish(`skytrac/talkgroup/${activeChannelId}`, payload);
     
     // Giả lập server phản hồi cấp quyền thành công sau 200ms
@@ -69,12 +72,14 @@ export default function useFloorControl(activeChannelId) {
   };
 
   const releaseMic = () => {
+     console.log("🛑 Releasing mic");
     if (status !== 'TALKING') return;
     
     setStatus('IDLE');
     
     // Báo cho group biết đã nói xong
     const payload = JSON.stringify({ clientId: myClientId, action: 'mic_freed' });
+    console.log("📤 Sending mic_freed message");
     clientRef.current.publish(`skytrac/talkgroup/${activeChannelId}`, payload);
   };
 
