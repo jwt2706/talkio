@@ -1,4 +1,22 @@
 import React, { useRef } from "react";
+import api from "./utils/api";
+import LiveWaveform from "./components/LiveWaveform";
+import TalkButton from "./components/TalkButton";
+import ExtendWindow from "./components/ExtendWindow";
+import useFloorControl from "./hooks/useFloorControl";
+import LoginPage from "./components/LoginPage";
+import useAudioStreaming from "./hooks/useAudioStreaming";
+
+// Admin portal overlay (inside the app, no router)
+import AdminPortal from "./components/Adminportal";
+
+const CHANNELS = [
+  { id: "1", name: "Channel 1" },
+  { id: "2", name: "Channel 2" },
+  { id: "3", name: "Channel 3" },
+  { id: "4", name: "Channel 4" },
+];
+
 // Utility to check/request mic permission
 async function ensureMicPermission() {
   if (!navigator?.permissions || !navigator?.mediaDevices) return;
@@ -22,29 +40,14 @@ async function ensureMicPermission() {
     }
   }
 }
-import api from "./utils/api";
-import LiveWaveform from "./components/LiveWaveform";
-import TalkButton from "./components/TalkButton";
-import ExtendWindow from "./components/ExtendWindow";
-import useFloorControl from "./hooks/useFloorControl";
-import LoginPage from "./components/LoginPage";
-import useAudioStreaming from "./hooks/useAudioStreaming";
-
-// Admin portal overlay (inside the app, no router)
-import AdminPortal from "./components/Adminportal";
-
-const CHANNELS = [
-  { id: "1", name: "Channel 1" },
-  { id: "2", name: "Channel 2" },
-  { id: "3", name: "Channel 3" },
-  { id: "4", name: "Channel 4" },
-];
 
 function App() {
-    // Ask for mic permission on first app load
-    React.useEffect(() => {
-      ensureMicPermission();
-    }, []);
+  
+  // Ask for mic permission on first app load
+  React.useEffect(() => {
+    ensureMicPermission();
+  }, []);
+  
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [activeChannelId, setActiveChannelId] = React.useState(CHANNELS[0].id);
 
