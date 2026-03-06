@@ -267,22 +267,7 @@ function App() {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-blue-100 to-purple-200 flex flex-col justify-end items-center">
-      {/* Mode switcher */}
-      <div className="absolute top-2 right-2 z-50">
-        <button
-          className={`px-3 py-1 rounded-l ${mode === 'skylink' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border'}`}
-          onClick={() => setMode('skylink')}
-        >Skylink</button>
-        <button
-          className={`px-3 py-1 rounded-r ${mode === 'system' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border'}`}
-          onClick={() => setMode('system')}
-        >System</button>
-      </div>
-
-      {/* 3. Thẻ Audio vật lý ẩn trên giao diện (Vượt rào Mobile) */}
       <audio ref={audioPlayerRef} autoPlay playsInline style={{ display: "none" }} />
-
-      {/* Header row ... (Giữ nguyên code của bạn) */}
       <div className="w-full flex items-center justify-between px-4 pt-2">
         <div className="flex-shrink-0">
           <img
@@ -305,73 +290,7 @@ function App() {
         </div>
       </div>
 
-      {/* System mode: Auth and rooms UI */}
-      {mode === 'system' && (
-        <div className="w-full max-w-md mx-auto mt-8 bg-white/80 rounded shadow p-6 flex flex-col gap-4">
-          {!user ? (
-            <>
-              <h2 className="text-xl font-bold">Login or Register</h2>
-              <input
-                className="border rounded px-2 py-1"
-                placeholder="Email"
-                value={authForm.email}
-                onChange={e => setAuthForm(f => ({ ...f, email: e.target.value }))}
-              />
-              <input
-                className="border rounded px-2 py-1"
-                placeholder="Password"
-                type="password"
-                value={authForm.password}
-                onChange={e => setAuthForm(f => ({ ...f, password: e.target.value }))}
-              />
-              <div className="flex gap-2">
-                <button className="bg-blue-600 text-white rounded px-4 py-2" onClick={handleLogin}>Login</button>
-                <button className="bg-gray-400 text-white rounded px-4 py-2" onClick={handleRegister}>Register</button>
-              </div>
-              {authError && <div className="text-red-600 text-sm">{authError}</div>}
-            </>
-          ) : (
-            <>
-              <div className="flex justify-between items-center">
-                <span className="font-semibold">Logged in as {user.email}</span>
-                <button className="text-blue-600 underline" onClick={handleLogout}>Logout</button>
-              </div>
-              <h2 className="text-lg font-bold mt-4">Rooms</h2>
-              <div className="flex gap-2 mb-2">
-                <input
-                  className="border rounded px-2 py-1 flex-1"
-                  placeholder="Room name"
-                  value={roomForm.name}
-                  onChange={e => setRoomForm(f => ({ ...f, name: e.target.value }))}
-                />
-                <select
-                  className="border rounded px-2 py-1"
-                  value={roomForm.isPublic ? 'public' : 'private'}
-                  onChange={e => setRoomForm(f => ({ ...f, isPublic: e.target.value === 'public' }))}
-                >
-                  <option value="public">Public</option>
-                  <option value="private">Private</option>
-                </select>
-                <button className="bg-green-600 text-white rounded px-4 py-1" onClick={handleCreateRoom}>Create</button>
-              </div>
-              {roomError && <div className="text-red-600 text-sm">{roomError}</div>}
-              <ul className="divide-y">
-                {rooms.map(room => (
-                  <li key={room.roomUuid} className="py-2 flex flex-col">
-                    <span className="font-semibold">{room.name}</span>
-                    <span className="text-xs text-gray-600">{room.isPublic ? 'Public' : 'Private'} | Admin: {room.adminUuid === user.uuid ? 'You' : room.adminUuid}</span>
-                    <span className="text-xs text-gray-600">Room UUID: {room.roomUuid}</span>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Skylink mode: original UI */}
-      {mode === 'skylink' && (
-        <>
+      
           <div className="flex-1 w-full flex flex-col items-center mt-5">
             {/* Connection status */}
             <div className="mt-4">
@@ -400,8 +319,7 @@ function App() {
           <p className="text-sm text-black/60">
             <span className="font-semibold">{activeChannel?.name}</span>
           </p>
-        </>
-      )}
+     
 
       <ExtendWindow
         open={drawerOpen}

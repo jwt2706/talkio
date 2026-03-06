@@ -106,27 +106,29 @@ export default function LoginPage({ open, onLogin, paired }) {
             )}
           </div>
           <div className="flex gap-4">
+            {/* Login button: main accent color */}
             <button
               type="button"
               onClick={handleLogin}
               disabled={!canLogin || loading}
-              className={`flex-1 py-3 rounded-lg font-semibold transition ${
-                canLogin && !loading
-                  ? "bg-white/30 hover:bg-white/40 text-white"
-                  : "bg-white/10 text-white/40 cursor-not-allowed"
-              }`}
+              className={`flex-1 py-3 rounded-lg font-semibold transition-colors duration-200
+                ${canLogin && !loading
+                  ? "bg-[#1B6CA8] hover:bg-[#2389D7] text-white shadow-md"
+                  : "bg-[#1B6CA8]/40 text-white/40 cursor-not-allowed"}
+              `}
             >
               {loading ? "Loading..." : "Login"}
             </button>
+            {/* Sign Up button: green accent */}
             <button
               type="button"
               onClick={handleSignup}
               disabled={!canLogin || loading}
-              className={`flex-1 py-3 rounded-lg font-semibold transition ${
-                canLogin && !loading
-                  ? "bg-green-500 hover:bg-green-600 text-white"
-                  : "bg-white/10 text-white/40 cursor-not-allowed"
-              }`}
+              className={`flex-1 py-3 rounded-lg font-semibold transition-colors duration-200
+                ${canLogin && !loading
+                  ? "bg-green-500 hover:bg-green-600 text-white shadow-md"
+                  : "bg-green-500/40 text-white/40 cursor-not-allowed"}
+              `}
             >
               {loading ? "Loading..." : "Sign Up"}
             </button>
