@@ -108,7 +108,7 @@ function App() {
         if (!cancelled && connectionStatus === 'connecting') {
           setPairingTimeout(true);
           setConnectionStatus('error');
-          setError('Not paired.');
+          setError('Try pairing again.');
         }
       }, 5000);
       (async () => {
@@ -308,7 +308,7 @@ function App() {
   }, [client, activeChannelId, myAudioId]);
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-blue-100 to-purple-200 flex flex-col justify-end items-center">
+    <div className="relative min-h-screen bg-gradient-to-br from-blue-100 to-purple-200 flex flex-col justify-end items-center p-6">
       <audio ref={audioPlayerRef} autoPlay playsInline style={{ display: "none" }} />
       <div className="w-full flex items-center justify-between px-4 pt-2">
         <div className="flex-shrink-0">
@@ -319,10 +319,7 @@ function App() {
           />
         </div>
 
-        {/* Centered title */}
         <h1 className="text-4xl font-bold drop-shadow-lg text-center flex-1">Talkio</h1>
-
-        {/* Hamburger menu */}
         <div className="flex-shrink-0">
           <button onClick={() => setDrawerOpen(true)} className="flex flex-col gap-1">
             <span className="w-8 h-1 bg-black rounded"></span>
@@ -331,10 +328,7 @@ function App() {
           </button>
         </div>
       </div>
-
-      
           <div className="flex-1 w-full flex flex-col items-center mt-5">
-            {/* Connection status */}
             <div className="mt-4 flex items-center gap-2">
               {connectionStatus === "connecting" && (
                 <span className="text-blue-600">Status: Connecting...</span>

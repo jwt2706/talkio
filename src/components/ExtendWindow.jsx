@@ -11,7 +11,6 @@ export default function ChannelDrawer({
 }) {
   return (
     <>
-      {/* Backdrop */}
       <div
         className={`fixed inset-0 z-40 bg-black/50 transition-opacity ${
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
@@ -19,7 +18,6 @@ export default function ChannelDrawer({
         onClick={onClose}
       />
 
-      {/* Drawer panel */}
       <aside
         className={`fixed right-0 top-0 z-50 h-full w-[320px] max-w-[90vw]
         transition-transform duration-200
@@ -28,12 +26,10 @@ export default function ChannelDrawer({
         role="dialog"
         aria-modal="true"
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-black/30">
           <h2 className="text-base font-semibold text-white">Talkgroups</h2>
 
           <div className="flex items-center gap-2">
-            {/* Settings -> open portal */}
             <button
               onClick={() => onOpenAdmin?.()}
               title="Admin Portal"
@@ -52,13 +48,11 @@ export default function ChannelDrawer({
           </div>
         </div>
 
-        {/* Body */}
         <div className="p-4 flex flex-col h-[calc(100%-64px)]">
           <p className="text-sm text-white/70 mb-3">
             Select a channel to join/switch.
           </p>
 
-          {/* Channel list */}
           <div className="space-y-2 flex-1 overflow-auto">
             {(channels || []).map((c) => {
               const active = c.id === activeChannelId;
@@ -91,8 +85,6 @@ export default function ChannelDrawer({
               );
             })}
           </div>
-
-          {/* No Add Channel button, no user dropdown here */}
         </div>
       </aside>
     </>
