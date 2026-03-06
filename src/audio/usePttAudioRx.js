@@ -1,3 +1,4 @@
+// usePttAudioRx.js - React hook for receiving and playing PTT audio via MQTT and Web Audio API
 import { useEffect, useRef } from "react";
 import { unpackPacket } from "./rtpPacket";
 import { JitterBuffer } from "./jitterBuffer";
