@@ -1,4 +1,5 @@
 import React, { useRef } from "react";
+import { FiRefreshCw } from "react-icons/fi";
 import api from "./utils/api";
 import LiveWaveform from "./components/LiveWaveform";
 import TalkButton from "./components/TalkButton";
@@ -356,10 +357,7 @@ function App() {
                       setMode((m) => m === 'skylink' ? 'system' : 'skylink');
                     }}
                   >
-                    {/* Simple refresh icon SVG */}
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582M20 20v-5h-.581M5.5 19A9 9 0 1021 12.5" />
-                    </svg>
+                    <FiRefreshCw className="h-5 w-5 text-red-600" />
                   </button>
                 </>
               )}
