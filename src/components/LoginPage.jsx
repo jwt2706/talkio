@@ -52,7 +52,15 @@ export default function LoginPage({ open, onLogin, paired }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[3000] bg-white flex items-center justify-center">
+    <div
+      className="fixed inset-0 z-[3000] flex items-center justify-center"
+      style={{
+        minHeight: '100vh',
+        minWidth: '100vw',
+        background: '#0B2436',
+        overflow: 'hidden',
+      }}
+    >
       {/* Satellite icon top left */}
       <div className="absolute top-6 left-6">
         <img
@@ -61,16 +69,12 @@ export default function LoginPage({ open, onLogin, paired }) {
           className="w-12 h-12 drop-shadow"
         />
       </div>
-      <div className="w-[520px] h-[720px] rounded-md bg-[#0B2436] shadow-lg flex flex-col items-center justify-center px-10">
-
+      <div className="w-[520px] h-[720px] rounded-md flex flex-col items-center justify-center px-10">
         {/* Title */}
         <h1 className="text-white text-6xl font-bold mb-6">SKYTRAC</h1>
-
         {/* Satellite icon */}
         <div className="mb-10 text-4xl text-white">🛰️</div>
-
         <form className="w-full">
-
           {/* EMAIL */}
           <div className="mb-4">
             <input
@@ -80,14 +84,12 @@ export default function LoginPage({ open, onLogin, paired }) {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-white/60 outline-none border border-white/10"
             />
-
             {!emailValid && submitted && (
               <p className="text-red-300 text-sm mt-1">
                 Please enter a valid email address
               </p>
             )}
           </div>
-
           {/* PASSWORD */}
           <div className="mb-6">
             <input
@@ -97,14 +99,12 @@ export default function LoginPage({ open, onLogin, paired }) {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-white/60 outline-none border border-white/10"
             />
-
             {!passwordValid && submitted && (
               <p className="text-red-300 text-sm mt-1">
                 Password must be at least 6 characters
               </p>
             )}
           </div>
-
           <div className="flex gap-4">
             <button
               type="button"
@@ -134,7 +134,6 @@ export default function LoginPage({ open, onLogin, paired }) {
           {error && (
             <p className="text-red-300 text-sm mt-3 text-center">{error}</p>
           )}
-
         </form>
       </div>
     </div>
