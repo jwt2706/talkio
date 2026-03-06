@@ -16,7 +16,9 @@ export default function useFloorControl(activeChannelId) {
       username: 'user1', // Thay bằng 1 trong 4 user bạn đã tạo (vd: user1)
       password: '112233', // Điền mật khẩu mà bạn đã thiết lập
       clean: true,
-      reconnectPeriod: 1000, // Tự động thử kết nối lại sau 1s nếu rớt mạng
+      connectTimeout: 30000, // Cho phép tối đa 30s để bắt tay với server
+      keepalive: 60,         // Gửi gói tin ping kiểm tra mạng mỗi 60s
+      reconnectPeriod: 5000, // Tự động thử kết nối lại sau 1s nếu rớt mạng
     };
 
     // 2. Khởi tạo kết nối WSS tới tên miền talk-io.app
