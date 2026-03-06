@@ -1,84 +1,194 @@
-// hooks/useFloorControl.js
-import { useState, useEffect, useRef } from 'react';
-import mqtt from 'mqtt';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { getElectronMqttClient } from "../utils/electronMqttClient";
 
 export default function useFloorControl(activeChannelId) {
-  const [status, setStatus] = useState('IDLE'); // IDLE, REQUESTING, TALKING, LOCKED
+  const [status, setStatus] = useState("IDLE"); // IDLE, REQUESTING, TALKING, LOCKED
+  const [isConnected, setIsConnected] = useState(false);
+
   const clientRef = useRef(null);
-  
-  // Tạo một ID định danh tạm thời cho thiết bị này để không tự khóa chính mình
-  const myClientId = useRef(`device_${Math.random().toString(36).substring(2, 9)}`).current;
+  const topicRef = useRef(null);
+
+  const myClientId = useRef(
+    `device_${Math.random().toString(36).substring(2, 9)}`
+  ).current;
 
   useEffect(() => {
-    // 1. Khởi tạo kết nối WebSocket tới server DigitalOcean
-    const client = mqtt.connect('ws://159.203.3.86:9001');
+    let cancelled = false;
+
+    const client = getElectronMqttClient();
     clientRef.current = client;
 
     const topic = `skytrac/talkgroup/${activeChannelId}`;
+    topicRef.current = topic;
 
-    client.on('connect', () => {
-      console.log(`Connected to MQTT. Subscribing to ${topic}`);
-      client.subscribe(topic);
-      // Khi vừa đổi kênh, reset trạng thái về IDLE
-      setStatus('IDLE'); 
-    });
+    const onConnect = () => {
+      console.log("[MQTT] connected");
+      setIsConnected(true);
+    };
 
-    // 2. Lắng nghe tín hiệu giành mic từ các thiết bị khác
-    client.on('message', (receivedTopic, message) => {
-      if (receivedTopic !== topic) return;
+    const onReconnect = () => {
+      console.warn("[MQTT] reconnecting...");
+      setIsConnected(false);
+    };
+
+    const onClose = () => {
+      console.warn("[MQTT] socket closed");
+      setIsConnected(false);
+    };
+
+    const onOffline = () => {
+      console.warn("[MQTT] offline");
+      setIsConnected(false);
+    };
+
+    const onEnd = () => {
+      console.warn("[MQTT] ended");
+      setIsConnected(false);
+    };
+
+    const onError = (err) => {
+      console.error("[MQTT] error:", err);
+      setIsConnected(false);
+    };
+
+    const onMessage = (receivedTopic, message) => {
+      if (receivedTopic !== topicRef.current) return;
+
+      const text =
+        typeof message === "string"
+          ? message
+          : new TextDecoder().decode(message);
+
+      console.log("[MQTT] message received", receivedTopic, text);
 
       try {
-        const payload = JSON.parse(message.toString());
-        
-        // Bỏ qua tin nhắn do chính mình gửi
+        const payload = JSON.parse(text);
+
         if (payload.clientId === myClientId) return;
 
-        if (payload.action === 'mic_taken') {
-          // Có người khác lấy mic -> Khóa nút
-          setStatus(prev => prev === 'TALKING' ? 'TALKING' : 'LOCKED');
-        } else if (payload.action === 'mic_freed') {
-          // Người kia nhả mic -> Mở khóa
-          setStatus('IDLE');
+        if (payload.action === "mic_taken") {
+          setStatus((prev) => (prev === "TALKING" ? "TALKING" : "LOCKED"));
+        } else if (payload.action === "mic_freed") {
+          setStatus("IDLE");
         }
       } catch (err) {
-        console.error("Lỗi parse MQTT message", err);
+        console.error("[MQTT] JSON parse error", err, text);
       }
+    };
+
+    client.on("connect", onConnect);
+    client.on("reconnect", onReconnect);
+    client.on("close", onClose);
+    client.on("offline", onOffline);
+    client.on("end", onEnd);
+    client.on("error", onError);
+    client.on("message", onMessage);
+
+    async function init() {
+      try {
+        await client.connect();
+        if (cancelled) return;
+
+        setIsConnected(!!client.connected);
+
+        client.subscribe(topic, { qos: 0 }, (err) => {
+          if (err) {
+            console.error("[MQTT] subscribe failed:", topic, err);
+            return;
+          }
+          console.log("[MQTT] subscribed to", topic);
+          setStatus("IDLE");
+        });
+      } catch (err) {
+        console.error("[MQTT] init failed:", err);
+        setIsConnected(false);
+      }
+    }
+
+    init();
+
+    return () => {
+      cancelled = true;
+
+      try {
+        client.unsubscribe(topic);
+      } catch {}
+
+      client.removeListener("connect", onConnect);
+      client.removeListener("reconnect", onReconnect);
+      client.removeListener("close", onClose);
+      client.removeListener("offline", onOffline);
+      client.removeListener("end", onEnd);
+      client.removeListener("error", onError);
+      client.removeListener("message", onMessage);
+    };
+  }, [activeChannelId, myClientId]);
+
+  const requestMic = useCallback(() => {
+    const client = clientRef.current;
+    const topic = topicRef.current;
+
+    if (status === "LOCKED") return;
+
+    if (!client || !client.connected) {
+      console.warn("[PTT] cannot request mic: MQTT not connected");
+      return;
+    }
+
+    setStatus("REQUESTING");
+
+    const payload = JSON.stringify({
+      clientId: myClientId,
+      action: "mic_taken",
+      ts: Date.now(),
     });
 
-    // 3. Cleanup: Hủy đăng ký và đóng kết nối khi đổi kênh hoặc tắt app
-    return () => {
-      client.unsubscribe(topic);
-      client.end();
-    };
-  }, [activeChannelId]); // Hook chạy lại mỗi khi activeChannelId thay đổi
+    console.log("[PTT] publishing mic_taken", { topic, payload });
 
-  // 4. Các hàm thao tác với Mic
-  const requestMic = () => {
-    if (status === 'LOCKED') return;
-    
-    setStatus('REQUESTING');
-    
-    // Gửi tín hiệu thông báo cho toàn group là mình lấy mic
-    const payload = JSON.stringify({ clientId: myClientId, action: 'mic_taken' });
-    clientRef.current.publish(`skytrac/talkgroup/${activeChannelId}`, payload);
-    
-    // Giả lập server phản hồi cấp quyền thành công sau 200ms
-    setTimeout(() => {
-      setStatus('TALKING');
-    }, 200);
+    client.publish(topic, payload, { qos: 0 }, (err) => {
+      if (err) {
+        console.error("[PTT] publish mic_taken failed", err);
+        setStatus("IDLE");
+        return;
+      }
+
+      setStatus("TALKING");
+    });
+  }, [status, myClientId]);
+
+  const releaseMic = useCallback(() => {
+    const client = clientRef.current;
+    const topic = topicRef.current;
+
+    if (status !== "TALKING") return;
+
+    setStatus("IDLE");
+
+    if (!client || !client.connected) {
+      console.warn("[PTT] cannot release mic: MQTT not connected");
+      return;
+    }
+
+    const payload = JSON.stringify({
+      clientId: myClientId,
+      action: "mic_freed",
+      ts: Date.now(),
+    });
+
+    console.log("[PTT] publishing mic_freed", { topic, payload });
+
+    client.publish(topic, payload, { qos: 0 }, (err) => {
+      if (err) {
+        console.error("[PTT] publish mic_freed failed", err);
+      }
+    });
+  }, [status, myClientId]);
+
+  return {
+    status,
+    requestMic,
+    releaseMic,
+    client: clientRef.current, // ✅ audio hooks can keep using this
+    isConnected,
   };
-
-  const releaseMic = () => {
-    if (status !== 'TALKING') return;
-    
-    setStatus('IDLE');
-    
-    // Báo cho group biết đã nói xong
-    const payload = JSON.stringify({ clientId: myClientId, action: 'mic_freed' });
-    clientRef.current.publish(`skytrac/talkgroup/${activeChannelId}`, payload);
-  };
-
-  return { status, requestMic, releaseMic,
-    client: clientRef.current // Trả về client để có thể dùng cho việc gửi audio sau này
-   };
 }
