@@ -131,10 +131,10 @@ function App() {
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-blue-100 to-purple-200 flex flex-col justify-end items-center">
       
-      {/* 3. Thẻ Audio vật lý ẩn trên giao diện (Vượt rào Mobile) */}
+      {/* 3. Hidden physical audio tag on UI (Mobile workaround) */}
       <audio ref={audioPlayerRef} autoPlay playsInline style={{ display: 'none' }} />
 
-      {/* Header row ... (Giữ nguyên code của bạn) */}
+      {/* Header row ... (Keep your code unchanged) */}
       <div className="w-full flex items-center justify-between px-4 pt-2">
         <div className="flex-shrink-0">
           <img

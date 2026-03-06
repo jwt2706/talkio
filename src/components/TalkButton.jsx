@@ -13,22 +13,22 @@ import { vibrate } from "../utils/vibrate";
  */
 export default function TalkButton({ status = 'IDLE', onPress, onRelease, className = "" }) {
   
-  // Ánh xạ trạng thái sang màu sắc (Tailwind classes)
+  // Map status to colors (Tailwind classes)
   const getButtonStyles = () => {
     switch (status) {
       case 'TALKING':
-        return "bg-green-600 border-green-800 ring-4 ring-green-400"; // Xanh lá khi có mic
+        return "bg-green-600 border-green-800 ring-4 ring-green-400"; // Green when the mic is active
       case 'REQUESTING':
-        return "bg-yellow-500 border-yellow-700"; // Vàng chờ cấp mic
+        return "bg-yellow-500 border-yellow-700"; // Yellow while waiting for mic allocation
       case 'LOCKED':
-        return "bg-gray-400 border-gray-600 cursor-not-allowed opacity-70"; // Xám khi người khác đang nói
+        return "bg-gray-400 border-gray-600 cursor-not-allowed opacity-70"; // Gray when someone else is speaking
       case 'IDLE':
       default:
-        return "bg-red-600 border-red-800"; // Đỏ mặc định
+        return "bg-red-600 border-red-800"; // Default red
     }
   };
 
-  // Ánh xạ trạng thái sang Text hiển thị
+  // Map status to display text
   const getButtonText = () => {
     switch (status) {
       case 'TALKING': return "Recording...";
@@ -40,7 +40,7 @@ export default function TalkButton({ status = 'IDLE', onPress, onRelease, classN
   };
 
   const handlePress = (e) => {
-    if (status === 'LOCKED') return; // Không cho bấm nếu kênh đang bận
+    if (status === 'LOCKED') return; // Don't allow press if channel is busy
     playBeep(); 
     vibrate(60); 
     if (onPress) onPress(e);
@@ -48,7 +48,7 @@ export default function TalkButton({ status = 'IDLE', onPress, onRelease, classN
 
   const handleRelease = (e) => {
     if (status === 'LOCKED') return;
-    // Tùy chỉnh: Chỉ kêu bíp nhả mic nếu trước đó thực sự đang TALKING
+    // Custom: only beep on release if we were actually TALKING
     if (status === 'TALKING' || status === 'REQUESTING') {
       playBeep(); 
       vibrate(40); 
