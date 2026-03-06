@@ -7,8 +7,6 @@ export default function ChannelDrawer({
   channels,
   activeChannelId,
   onSelectChannel,
-
-  // NEW: open portal
   onOpenAdmin,
 }) {
   return (

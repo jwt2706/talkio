@@ -6,8 +6,6 @@ import ExtendWindow from "./components/ExtendWindow";
 import useFloorControl from "./hooks/useFloorControl";
 import LoginPage from "./components/LoginPage";
 import useAudioStreaming from "./hooks/useAudioStreaming";
-
-// Admin portal overlay (inside the app, no router)
 import AdminPortal from "./components/Adminportal";
 
 const CHANNELS = [
@@ -41,56 +39,86 @@ async function ensureMicPermission() {
   }
 }
 
+
 function App() {
-  
-  // Ask for mic permission on first app load
-  React.useEffect(() => {
-    ensureMicPermission();
-  }, []);
-  
+  const [pairingTimeout, setPairingTimeout] = React.useState(false);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [activeChannelId, setActiveChannelId] = React.useState(CHANNELS[0].id);
-
   const [connectionStatus, setConnectionStatus] = React.useState("connecting"); // connecting | connected | error
   const [deviceStatus, setDeviceStatus] = React.useState(null);
   const [error, setError] = React.useState(null);
-  // System user state
   const [mode, setMode] = React.useState('skylink'); // 'skylink' or 'system'
-  const [user, setUser] = React.useState(null); // { email, uuid, token }
+  // Persist user
+  const [user, setUser] = React.useState(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return null;
+  });
   const [authForm, setAuthForm] = React.useState({ email: '', password: '' });
   const [authError, setAuthError] = React.useState(null);
   const [rooms, setRooms] = React.useState([]);
   const [roomForm, setRoomForm] = React.useState({ name: '', isPublic: true });
   const [roomError, setRoomError] = React.useState(null);
-
-  // Admin portal open/close
   const [adminOpen, setAdminOpen] = React.useState(false);
-  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
-  const [currentUser, setCurrentUser] = React.useState(null);
+  const [isLoggedIn, setIsLoggedIn] = React.useState(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      return !!stored;
+    } catch { return false; }
+  });
+  const [currentUser, setCurrentUser] = React.useState(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return null;
+  });
   const handleAdminLogin = (user) => {
     setCurrentUser(user);
     setIsLoggedIn(true);
+    setUser(user);
+    try {
+      localStorage.setItem('user', JSON.stringify(user));
+    } catch {}
   };
-  // Users are created by email (portal manages these)
+
   const [users, setUsers] = React.useState([
     { id: "u1", email: "user@uottawa.ca" },
   ]);
 
+  React.useEffect(() => {
+    ensureMicPermission();
+  }, []);
+
   // Connect to Skylink on mount with default creds
   React.useEffect(() => {
     let cancelled = false;
+    let timeoutId;
     if (mode === 'skylink') {
       setConnectionStatus('connecting');
       setError(null);
       setUser(null);
       setRooms([]);
+      setPairingTimeout(false);
+      // Set timeout for pairing (e.g., 5 seconds)
+      timeoutId = setTimeout(() => {
+        if (!cancelled && connectionStatus === 'connecting') {
+          setPairingTimeout(true);
+          setConnectionStatus('error');
+          setError('Not paired.');
+        }
+      }, 5000);
       (async () => {
         try {
           await api.login('skytrac', 'skytrac');
           if (cancelled) return;
+          clearTimeout(timeoutId);
           setConnectionStatus('connected');
         } catch (e) {
           if (cancelled) return;
+          clearTimeout(timeoutId);
           setConnectionStatus('error');
           setError('Failed to pair: ' + (e.message || e.toString()));
         }
@@ -99,8 +127,9 @@ function App() {
       setConnectionStatus('system');
       setError(null);
       setDeviceStatus(null);
+      setPairingTimeout(false);
     }
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearTimeout(timeoutId); };
   }, [mode]);
 
   // Fetch rooms when logged in (system mode)
@@ -130,6 +159,11 @@ function App() {
     try {
       const data = await api.userLogin(authForm.email, authForm.password);
       setUser(data);
+      setCurrentUser(data);
+      setIsLoggedIn(true);
+      try {
+        localStorage.setItem('user', JSON.stringify(data));
+      } catch {}
       setAuthForm({ email: '', password: '' });
     } catch (e) {
       setAuthError(e.message);
@@ -137,7 +171,14 @@ function App() {
   };
   const handleLogout = () => {
     setUser(null);
+    setCurrentUser(null);
+    setIsLoggedIn(false);
     setRooms([]);
+    try {
+      localStorage.removeItem('user');
+    } catch {}
+    // Optionally clear JWT
+    if (api.setJwt) api.setJwt(null);
   };
 
   // Room handlers (system mode)
@@ -293,7 +334,7 @@ function App() {
       
           <div className="flex-1 w-full flex flex-col items-center mt-5">
             {/* Connection status */}
-            <div className="mt-4">
+            <div className="mt-4 flex items-center gap-2">
               {connectionStatus === "connecting" && (
                 <span className="text-blue-600">Status: Connecting...</span>
               )}
@@ -301,7 +342,26 @@ function App() {
                 <span className="text-green-600">Status: Paired</span>
               )}
               {connectionStatus === "error" && (
-                <span className="text-red-600">Status: Disconnected</span>
+                <>
+                  <span className="text-red-600">Status: Not paired</span>
+                  <button
+                    title="Retry pairing"
+                    aria-label="Retry pairing"
+                    className="ml-2 p-1 rounded hover:bg-red-100"
+                    onClick={() => {
+                      setConnectionStatus('connecting');
+                      setError(null);
+                      setPairingTimeout(false);
+                      // retrigger effect by toggling mode
+                      setMode((m) => m === 'skylink' ? 'system' : 'skylink');
+                    }}
+                  >
+                    {/* Simple refresh icon SVG */}
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582M20 20v-5h-.581M5.5 19A9 9 0 1021 12.5" />
+                    </svg>
+                  </button>
+                </>
               )}
             </div>
 
@@ -336,6 +396,7 @@ function App() {
           setActiveChannelId(newChannel.id);
           setDrawerOpen(false);
         }}
+        onOpenAdmin={() => setAdminOpen(true)}
       />
 
       {/* ✅ Admin Portal overlay inside the app */}

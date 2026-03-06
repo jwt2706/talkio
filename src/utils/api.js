@@ -62,14 +62,31 @@ export function setSkytracApiBase(url) {
   SKYTRAC_API_BASE = url;
 }
 
-let jwt = null;
 
+// JWT persistence
+let jwt = null;
 function setJwt(token) {
   jwt = token;
+  if (token) {
+    try {
+      localStorage.setItem('jwt', token);
+    } catch {}
+  } else {
+    try {
+      localStorage.removeItem('jwt');
+    } catch {}
+  }
 }
-
 function getJwt() {
-  return jwt;
+  if (jwt) return jwt;
+  try {
+    const stored = localStorage.getItem('jwt');
+    if (stored) {
+      jwt = stored;
+      return jwt;
+    }
+  } catch {}
+  return null;
 }
 
 function getHeaders(auth = false, extra = {}) {
